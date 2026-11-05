@@ -92,4 +92,4 @@ El proyecto está conectado a [Lovable](https://lovable.dev/projects/de487c47-7b
 
 Trabajá en ramas y uní los cambios mediante pull requests. No reescribas el historial publicado con force push, rebase, amend o squash de commits ya subidos, porque puede afectar el historial sincronizado con Lovable.
 
-El flujo local documentado usa npm y `package-lock.json`. Se conservan también los archivos de Bun del entorno original para mantener su compatibilidad con Lovable.
+El flujo local y el despliegue usan npm y `package-lock.json`. No agregues un `bun.lock` desactualizado: Cloudflare puede detectarlo y elegir Bun para instalar las dependencias. `bunfig.toml` conserva las opciones del entorno original, pero no interviene en las instalaciones con npm.
