@@ -37,14 +37,14 @@ export function Cuenta() {
     finally { setOcupado(false); }
   }
   return (
-    <div className="w-full border-t pt-3">
+    <div className="account-area">
       {usuario ? <div className="flex flex-wrap items-center gap-3">
         <span>{usuario.user_metadata["nombre"] || "Mi cuenta"}</span>
         <button type="button" disabled={ocupado} onClick={salir} className="text-primary underline">Cerrar sesión</button>
-      </div> : <button type="button" disabled={cargando} onClick={() => setAbierto(!abierto)} className="text-primary underline">
+      </div> : <button type="button" disabled={cargando} onClick={() => setAbierto(!abierto)} className="account-button">
         {abierto ? "Cerrar acceso" : "Ingresar / Registrarme"}
       </button>}
-      {!usuario && abierto && <form onSubmit={enviar} className="mx-auto mt-4 max-w-md space-y-3 rounded-xl border p-4">
+      {!usuario && abierto && <form onSubmit={enviar} className="account-form space-y-3 rounded-2xl border bg-card p-5 shadow-lg">
         <h2 className="font-display text-2xl">{registro ? "Crear cuenta" : "Iniciar sesión"}</h2>
         {registro && <label className="block">Nombre
           <input name="nombre" required maxLength={80} autoComplete="nickname" className="w-full rounded border bg-background p-2" />

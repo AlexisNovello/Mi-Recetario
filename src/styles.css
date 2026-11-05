@@ -64,26 +64,27 @@
 }
 
 :root {
+  --tablecloth-stripe: oklch(0.55 0.045 145 / 4%);
   --radius: 0.75rem;
-  --background: oklch(0.98 0.012 80);
-  --foreground: oklch(0.27 0.03 50);
+  --background: oklch(0.98 0.008 135);
+  --foreground: oklch(0.28 0.025 150);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.27 0.03 50);
+  --card-foreground: oklch(0.28 0.025 150);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.27 0.03 50);
-  --primary: oklch(0.58 0.16 38);
-  --primary-foreground: oklch(0.99 0.01 80);
-  --secondary: oklch(0.94 0.03 70);
-  --secondary-foreground: oklch(0.3 0.04 50);
-  --muted: oklch(0.95 0.015 75);
-  --muted-foreground: oklch(0.5 0.03 55);
-  --accent: oklch(0.94 0.03 70);
-  --accent-foreground: oklch(0.3 0.04 50);
+  --popover-foreground: oklch(0.28 0.025 150);
+  --primary: oklch(0.43 0.075 150);
+  --primary-foreground: oklch(0.99 0.005 135);
+  --secondary: oklch(0.94 0.025 140);
+  --secondary-foreground: oklch(0.32 0.045 150);
+  --muted: oklch(0.955 0.013 140);
+  --muted-foreground: oklch(0.47 0.025 150);
+  --accent: oklch(0.94 0.025 140);
+  --accent-foreground: oklch(0.32 0.045 150);
   --destructive: oklch(0.55 0.2 27);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.9 0.02 70);
-  --input: oklch(0.9 0.02 70);
-  --ring: oklch(0.58 0.16 38);
+  --border: oklch(0.89 0.018 140);
+  --input: oklch(0.89 0.018 140);
+  --ring: oklch(0.43 0.075 150);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -100,6 +101,7 @@
 }
 
 .dark {
+  --tablecloth-stripe: oklch(0.8 0.035 145 / 3%);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -141,6 +143,88 @@
 
   body {
     background-color: var(--color-background);
+    background-image:
+      repeating-linear-gradient(to right, var(--tablecloth-stripe) 0 18px, transparent 18px 36px),
+      repeating-linear-gradient(to bottom, var(--tablecloth-stripe) 0 18px, transparent 18px 36px);
     color: var(--color-foreground);
   }
 }
+
+@layer base {
+ body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+ button, input, select, textarea, a { transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
+ button:not(:disabled), select { cursor: pointer; }
+ :where(a, button, input, select, textarea):focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+}
+.remove-action:hover:not(:disabled) {
+ color: var(--destructive);
+ background-color: color-mix(in oklch, var(--destructive) 9%, var(--card));
+ border-color: color-mix(in oklch, var(--destructive) 40%, var(--border));
+}
+.remove-action:hover:not(:disabled) svg { color: inherit; }
+.recipe-search::-webkit-search-cancel-button {
+ -webkit-appearance: none;
+ appearance: none;
+}
+.site-header {
+ position: relative;
+ padding-bottom: 14px;
+ background-color: var(--primary);
+ background-image:
+  repeating-linear-gradient(0deg, oklch(1 0 0 / 3%) 0 1px, transparent 1px 3px),
+  repeating-linear-gradient(90deg, oklch(0.15 0.025 150 / 7%) 0 1px, transparent 1px 3px),
+  linear-gradient(to right, oklch(0.47 0.07 150), oklch(0.43 0.075 150) 50%, oklch(0.37 0.065 155));
+ color: var(--primary-foreground);
+ border-bottom: 0;
+ box-shadow: 0 3px 18px oklch(0.28 0.025 150 / 12%);
+}
+.site-header::before {
+ content: "";
+ position: absolute;
+ pointer-events: none;
+ left: 0;
+ right: 0;
+ top: calc(100% - 1px);
+ height: 24px;
+ background: inherit;
+ -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='24' viewBox='0 0 240 24'%3E%3Cpath d='M0 0H240V18Q180 26 120 18T0 18Z'/%3E%3C/svg%3E") repeat-x left top / 240px 24px;
+ mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='24' viewBox='0 0 240 24'%3E%3Cpath d='M0 0H240V18Q180 26 120 18T0 18Z'/%3E%3C/svg%3E") repeat-x left top / 240px 24px;
+}
+.site-header::after {
+ content: "";
+ position: absolute;
+ pointer-events: none;
+ left: 0;
+ right: 0;
+ top: calc(100% - 1px);
+ height: 24px;
+ background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='24' viewBox='0 0 240 24'%3E%3Cg fill='none' stroke='%23f3efd8' stroke-opacity='.65' stroke-width='1' stroke-linecap='round' stroke-dasharray='6 6'%3E%3Cpath d='M0 6Q60 -2 120 6T240 6'/%3E%3Cpath d='M0 12Q60 4 120 12T240 12'/%3E%3C/g%3E%3C/svg%3E");
+ background-size: 240px 24px;
+ background-repeat: repeat-x;
+ filter: drop-shadow(0 1px 0 oklch(0.2 0.025 150 / 25%));
+}
+.site-brand { color: var(--primary-foreground); font-size: 2rem; }
+.site-brand > span { color: var(--primary); }
+.site-header :where(a, button):focus-visible { outline-color: var(--primary-foreground); }
+.site-header .account-form { color: var(--foreground); }
+.site-header .account-form :where(a, button, input):focus-visible { outline-color: var(--ring); }
+.account-area > div > button { color: var(--primary-foreground); }
+.nav-link { padding: 0.55rem 1rem; border-radius: 999px; font-size: 0.9rem; color: var(--muted-foreground); white-space: nowrap; }
+.nav-link:hover { color: var(--primary); background: oklch(0.86 0.045 145); box-shadow: inset 0 0 0 1px oklch(0.65 0.055 145 / 35%); }
+.nav-link-active { background: var(--card); color: var(--primary); font-weight: 600; box-shadow: 0 2px 5px oklch(0.28 0.025 150 / 7%); }
+.account-area { position: relative; margin-left: 0.5rem; }
+.account-button { border-radius: 999px; padding: 0.7rem 1.1rem; background: var(--card); color: var(--primary); font-size: 0.875rem; font-weight: 600; }
+.account-button:hover:not(:disabled) { background: var(--secondary); }
+.account-button:disabled { opacity: 0.5; }
+.account-form { position: absolute; z-index: 20; right: 0; top: calc(100% + 1rem); width: min(24rem, calc(100vw - 2rem)); }
+.recipe-card { transition: box-shadow 180ms ease, border-color 180ms ease; }
+.recipe-card:hover { border-color: oklch(0.75 0.045 145); box-shadow: 0 8px 24px oklch(0.28 0.025 150 / 8%); }
+@media (max-width: 639px) {
+ .site-nav { gap: 1rem 0.5rem; }
+ .site-brand { font-size: 1.5rem; gap: 0.5rem; }
+ .site-links { order: 3; width: 100%; justify-content: center; }
+ .site-links .nav-link { flex: 1; text-align: center; }
+ .account-area { margin-left: 0; max-width: 100%; }
+ .account-button { padding: 0.65rem 0.8rem; font-size: 0.75rem; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }

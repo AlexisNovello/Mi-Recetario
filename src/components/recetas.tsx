@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Bookmark, BookmarkCheck, Clock, Heart, Users } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { getSupabase } from "@/lib/supabase";
+import { cargarFoto, fotoCacheada } from "@/lib/fotos";
 import {
   alternarGuardada,
   alternarLike,
@@ -33,19 +34,22 @@ export function Controles({ receta }: { receta: Receta }) {
         onClick={() => void actuar(() => alternarLike(receta.id))}
         aria-pressed={gusta}
         aria-label={gusta ? `Quitar me gusta de ${receta.titulo}` : `Me gusta ${receta.titulo}`}
-        className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm hover:bg-secondary"
+        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm ${gusta ? "remove-action" : "hover:enabled:bg-secondary"}`}
       >
-        <Heart className={`size-4 text-primary ${gusta ? "fill-primary" : ""}`} />
+        <Heart className={`size-4 text-primary ${gusta ? "fill-current" : ""}`} />
         {contarLikes(receta, likes)}
       </button>
       <button
         type="button"
         disabled={!usuario || pendientes.includes(`guardadas:${receta.id}`)}
         title={!usuario ? "Iniciá sesión para guardar recetas" : undefined}
-        onClick={() => void actuar(() => alternarGuardada(receta.id))}
+        onClick={() => {
+          if (guardada && !window.confirm(`¿Querés quitar “${receta.titulo}” de tus guardados?`)) return;
+          void actuar(() => alternarGuardada(receta.id));
+        }}
         aria-pressed={guardada}
         aria-label={guardada ? `Quitar ${receta.titulo} de guardadas` : `Guardar ${receta.titulo}`}
-        className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm hover:bg-secondary"
+        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm ${guardada ? "remove-action" : "hover:enabled:bg-secondary"}`}
       >
         <Marcador className="size-4" />
         {guardada ? "Guardada" : "Guardar"}
@@ -67,24 +71,31 @@ export function Placeholder({ titulo, grande }: { titulo: string; grande?: boole
 }
 
 export function FotoReceta({ receta, grande = false }: { receta: Receta; grande?: boolean }) {
-  const [url, setUrl] = useState("");
+  const { usuario } = useEstado();
+  const usuarioId = usuario?.id ?? "anonimo";
+  const path = receta.imagen_path ?? "";
+  const [foto, setFoto] = useState(() => ({ path, usuarioId, url: fotoCacheada(path, usuarioId)?.url ?? "" }));
+  const url = foto.path === path && foto.usuarioId === usuarioId ? foto.url : "";
   const [error, setError] = useState(false);
   useEffect(() => {
     let activo = true;
     let timer: ReturnType<typeof setTimeout>;
     async function cargar() {
-      if (!receta.imagen_path) return;
+      if (!path) return;
       try {
-        const { data, error } = await getSupabase().storage.from("recetas").createSignedUrl(receta.imagen_path, 600);
+        const nueva = await cargarFoto(path, usuarioId);
         if (activo) {
-          setUrl(error ? "" : data?.signedUrl ?? ""); setError(Boolean(error));
-          timer = setTimeout(() => void cargar(), 480000);
+          setFoto({ path, usuarioId, url: nueva.url }); setError(false);
+          timer = setTimeout(() => void cargar(), Math.max(1000, nueva.renovarEn - Date.now()));
         }
-      } catch { if (activo) setError(true); }
+      } catch {
+        if (activo) timer = setTimeout(() => void cargar(), 30000);
+      }
     }
-    setUrl(""); setError(false); void cargar();
+    setFoto({ path, usuarioId, url: fotoCacheada(path, usuarioId)?.url ?? "" });
+    setError(false); void cargar();
     return () => { activo = false; clearTimeout(timer); };
-  }, [receta.imagen_path]);
+  }, [path, usuarioId]);
   if (!url || error) return <Placeholder titulo={receta.titulo} grande={grande} />;
   return <img src={url} alt={receta.titulo} onError={() => setError(true)} className={`w-full object-cover ${grande ? "h-56 rounded-xl" : "h-36"}`} />;
 }
@@ -101,7 +112,7 @@ export function Meta({ receta }: { receta: Receta }) {
 
 export function TarjetaReceta({ receta }: { receta: Receta }) {
   return (
-    <article className="overflow-hidden rounded-xl border bg-card shadow-sm">
+    <article className="recipe-card overflow-hidden rounded-2xl border bg-card shadow-sm">
       <Link to="/receta/$id" params={{ id: receta.id }} className="block hover:opacity-90">
         <FotoReceta receta={receta} />
         <div className="space-y-1 p-4 pb-2">

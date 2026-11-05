@@ -11,6 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { LogoRecetario } from "@/components/logo-recetario";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { iniciarConexion, mensajeError, recargar, useEstado } from "@/lib/recetas";
 import { Cuenta } from "@/components/cuenta";
@@ -126,11 +127,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <header className="border-b bg-card">
-        <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
-          <Link to="/" className="mr-auto font-display text-2xl text-primary">Mi Recetario</Link>
-          <Link to="/" className="hover:text-primary" activeProps={{ className: "text-primary font-semibold" }} activeOptions={{ exact: true }}>Explorar</Link>
-          <Link to="/mi-recetario" className="hover:text-primary" activeProps={{ className: "text-primary font-semibold" }}>Mi recetario</Link>
+      <header className="site-header border-b bg-card">
+        <nav aria-label="Navegación principal" className="site-nav mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-4">
+          <Link to="/" className="site-brand mr-auto inline-flex items-center gap-3 font-display text-2xl text-primary"><span className="flex size-11 items-center justify-center rounded-2xl bg-secondary"><LogoRecetario /></span>Mi Recetario</Link>
+          <div className="site-links flex items-center gap-1 rounded-full bg-muted p-1">
+          <Link to="/" className="nav-link" activeProps={{ className: "nav-link-active" }} activeOptions={{ exact: true }}>Explorar</Link>
+          <Link to="/mi-recetario" className="nav-link" activeProps={{ className: "nav-link-active" }}>Mi recetario</Link>
+          </div>
           <Cuenta />
         </nav>
       </header>
