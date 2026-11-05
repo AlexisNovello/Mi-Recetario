@@ -51,7 +51,7 @@ function Detalle() {
                   finally { setOcupado(false); }
                 }
               }}
-              className="rounded-full border border-destructive px-3 py-1 text-sm text-destructive hover:bg-secondary"
+              className="remove-action rounded-full border border-destructive px-3 py-1 text-sm text-destructive"
             >
               Eliminar
             </button>

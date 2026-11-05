@@ -24,7 +24,7 @@ function MiRecetario() {
       role="tab"
       aria-selected={pestana === id}
       onClick={() => setPestana(id)}
-      className={`border-b-2 px-4 py-2 ${pestana === id ? "border-primary font-medium text-primary" : "border-transparent text-muted-foreground"}`}
+      className={`rounded-full px-5 py-2 font-semibold ${pestana === id ? "bg-primary text-primary-foreground shadow-sm" : "text-primary hover:bg-secondary"}`}
     >
       {texto}
     </button>
@@ -36,11 +36,11 @@ function MiRecetario() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-4xl">Mi recetario</h1>
-          <p className="text-muted-foreground">Tus recetas y tus favoritas, en un solo lugar.</p>
+          <p className="text-muted-foreground">Tus recetas y tus guardados en un solo lugar.</p>
         </div>
         <Link to="/nueva" className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90">+ Nueva receta</Link>
       </div>
-      <div role="tablist" className="flex border-b">{tab("mias", "Mis recetas")}{tab("guardadas", "Guardadas")}</div>
+      <div role="tablist" aria-label="Recetas de mi recetario" className="flex w-fit max-w-full flex-wrap gap-1 rounded-full border border-primary/30 bg-card p-1 shadow-sm">{tab("mias", "Mis recetas")}{tab("guardadas", "Guardadas")}</div>
       {pestana === "mias" ? (
         <Grilla recetas={recetas.filter(esPropia)} vacio="Todavía no creaste recetas." />
       ) : (
