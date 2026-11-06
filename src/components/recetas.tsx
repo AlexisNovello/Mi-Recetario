@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Bookmark, BookmarkCheck, Clock, Heart, Users } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { getSupabase } from "@/lib/supabase";
 import { cargarFoto, fotoCacheada } from "@/lib/fotos";
 import {
@@ -8,6 +9,7 @@ import {
   alternarLike,
   contarLikes,
   guardarReceta,
+  reportarReceta,
   CATEGORIAS,
   mensajeError,
   useEstado,
@@ -29,7 +31,7 @@ export function Controles({ receta }: { receta: Receta }) {
     <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
-        disabled={!usuario || pendientes.includes(`me_gusta:${receta.id}`)}
+        disabled={!usuario || receta.borrada || pendientes.includes(`me_gusta:${receta.id}`)}
         title={!usuario ? "Iniciá sesión para dar me gusta" : undefined}
         onClick={() => void actuar(() => alternarLike(receta.id))}
         aria-pressed={gusta}
@@ -41,7 +43,7 @@ export function Controles({ receta }: { receta: Receta }) {
       </button>
       <button
         type="button"
-        disabled={!usuario || pendientes.includes(`guardadas:${receta.id}`)}
+        disabled={!usuario || receta.borrada || pendientes.includes(`guardadas:${receta.id}`)}
         title={!usuario ? "Iniciá sesión para guardar recetas" : undefined}
         onClick={() => {
           if (guardada && !window.confirm(`¿Querés quitar “${receta.titulo}” de tus guardados?`)) return;
@@ -54,9 +56,53 @@ export function Controles({ receta }: { receta: Receta }) {
         <Marcador className="size-4" />
         {guardada ? "Guardada" : "Guardar"}
       </button>
+      {receta.borrada && <span className="rounded-full bg-red-100 px-3 py-1 text-sm text-red-800">Borrado</span>}
       {error && <p role="alert" className="w-full text-sm text-destructive">{error}</p>}
     </div>
   );
+}
+
+export function BotonReportar({ receta }: { receta: Receta }) {
+  const [abierto, setAbierto] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState("");
+  async function enviar() {
+    if (enviando || !motivo.trim()) return;
+    setEnviando(true); setError("");
+    try {
+      await reportarReceta(receta.id, motivo);
+      setAbierto(false); setMotivo("");
+    } catch (e) { setError(mensajeError(e)); }
+    finally { setEnviando(false); }
+  }
+  return <Dialog.Root open={abierto} onOpenChange={(valor) => {
+    if (enviando) return;
+    setAbierto(valor);
+    if (valor) { setMotivo(""); setError(""); }
+  }}>
+    <Dialog.Trigger asChild>
+      <button type="button" aria-label={`Reportar ${receta.titulo}`} className="ml-auto rounded-full bg-red-100 px-3 py-1 text-sm text-red-800 hover:bg-red-200">Reportar</button>
+    </Dialog.Trigger>
+    <Dialog.Portal>
+      <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40" />
+      <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 space-y-4 rounded-2xl border bg-card p-6 shadow-xl">
+        <Dialog.Title className="font-display text-2xl">Reportar {receta.titulo}</Dialog.Title>
+        <Dialog.Description className="text-sm text-muted-foreground">Escribí el motivo del reporte.</Dialog.Description>
+        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void enviar(); }}>
+          <label className="block space-y-2">
+            <span className="sr-only">Motivo del reporte</span>
+            <textarea required disabled={enviando} maxLength={2000} rows={4} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Explicá el motivo…" className="w-full resize-y rounded-md border bg-background px-3 py-2" />
+          </label>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <div className="flex justify-between gap-3">
+            <button type="submit" disabled={!motivo.trim() || enviando} className="rounded-full bg-red-700 px-4 py-2 text-white hover:enabled:bg-red-800 disabled:opacity-50">{enviando ? "Enviando…" : "Reportar"}</button>
+            <Dialog.Close type="button" disabled={enviando} className="rounded-full border px-4 py-2 text-primary hover:bg-secondary">Cerrar</Dialog.Close>
+          </div>
+        </form>
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog.Root>;
 }
 
 export function Placeholder({ titulo, grande }: { titulo: string; grande?: boolean }) {
@@ -112,7 +158,7 @@ export function Meta({ receta }: { receta: Receta }) {
 
 export function TarjetaReceta({ receta }: { receta: Receta }) {
   return (
-    <article className="recipe-card overflow-hidden rounded-2xl border bg-card shadow-sm">
+    <article className={`recipe-card overflow-hidden rounded-2xl border shadow-sm ${receta.borrada ? "border-red-300 bg-red-50 text-red-900" : "bg-card"}`}>
       <Link to="/receta/$id" params={{ id: receta.id }} className="block hover:opacity-90">
         <FotoReceta receta={receta} />
         <div className="space-y-1 p-4 pb-2">

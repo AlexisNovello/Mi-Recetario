@@ -9,13 +9,16 @@ export type Receta = {
   autor_id?: string; imagen_path?: string | null;
   tiempo: number; porciones: number; ingredientes: string[]; pasos: string[];
   publica: boolean; categoria: Categoria; likesBase: number;
+  borrada?: boolean; motivo_borrado?: string | null;
 };
 type FilaReceta = Omit<Receta, "autor" | "likesBase"> & { autor_id: string };
 type Estado = {
   recetas: Receta[]; likes: string[]; guardadas: string[];
-  usuario: User | null; cargando: boolean; error: string; pendientes: string[];
+  usuario: User | null; esAdmin: boolean; cargando: boolean; error: string; pendientes: string[];
+  bloqueado: boolean; motivoBloqueo: string;
+  accesoVerificado: boolean;
 };
-const INICIAL: Estado = { recetas: [], likes: [], guardadas: [], usuario: null, cargando: true, error: "", pendientes: [] };
+const INICIAL: Estado = { recetas: [], likes: [], guardadas: [], usuario: null, esAdmin: false, cargando: true, error: "", pendientes: [], bloqueado: false, motivoBloqueo: "", accesoVerificado: false };
 let estado = INICIAL;
 let version = 0;
 const oyentes = new Set<() => void>();
@@ -39,9 +42,19 @@ export async function recargar() {
   const usuario = estado.usuario;
   try {
     const db = getSupabase();
+    if (usuario) {
+      const { data, error } = await db.rpc("mi_estado_bloqueo");
+      if (error) throw error;
+      if (turno !== version) return;
+      if (!data || typeof data.bloqueado !== "boolean") throw new Error("No se pudo verificar el estado de tu cuenta.");
+      if (data?.bloqueado) {
+        actualizar({ ...INICIAL, usuario, cargando: false, accesoVerificado: true, bloqueado: true, motivoBloqueo: data.motivo_bloqueo ?? "" });
+        return;
+      }
+    }
     const [recetas, perfiles, likes, guardadas] = await Promise.all([
       db.from("recetas").select("*").order("creado_en", { ascending: false }),
-      db.from("perfiles").select("id,nombre"),
+      db.from("perfiles").select("id,nombre,rol"),
       db.from("me_gusta").select("usuario_id,receta_id"),
       usuario ? db.from("guardadas").select("receta_id").eq("usuario_id", usuario.id) : Promise.resolve({ data: [], error: null }),
     ]);
@@ -49,6 +62,8 @@ export async function recargar() {
     if (turno !== version) return;
     const nombres = new Map((perfiles.data ?? []).map((p) => [p.id, p.nombre]));
     actualizar({
+      bloqueado: false, motivoBloqueo: "", accesoVerificado: true,
+      esAdmin: Boolean(usuario && (perfiles.data ?? []).some((p) => p.id === usuario.id && p.rol === "admin")),
       recetas: ((recetas.data ?? []) as FilaReceta[]).map((r) => ({ ...r,
         autor: nombres.get(r.autor_id) ?? "Usuario",
         likesBase: (likes.data ?? []).filter((l) => l.receta_id === r.id && l.usuario_id !== usuario?.id).length,
@@ -63,11 +78,21 @@ export async function recargar() {
 export function iniciarConexion() {
   const db = getSupabase();
   let activo = true;
+  let sesionInicializada = false;
   let timer: ReturnType<typeof setTimeout>;
   const { data } = db.auth.onAuthStateChange((_evento, sesion) => {
     if (!activo) return;
-    ++version;
-    actualizar({ ...INICIAL, usuario: sesion?.user ?? null });
+    const usuario = sesion?.user ?? null;
+    const cambioUsuario = !sesionInicializada || usuario?.id !== estado.usuario?.id;
+    sesionInicializada = true;
+    if (cambioUsuario) {
+      ++version;
+      actualizar({ ...INICIAL, usuario });
+    } else {
+      // Supabase vuelve a emitir la sesión al recuperar el foco o renovar el token.
+      // Conservamos los datos y la pantalla montada mientras se actualizan.
+      actualizar({ usuario });
+    }
     clearTimeout(timer);
     timer = setTimeout(() => { if (activo) void recargar(); }, 0);
   });
@@ -80,12 +105,13 @@ export function iniciarConexion() {
 }
 const normalizar = (texto: string) => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es").trim();
 export function filtrarRecetas(recetas: Receta[], nombre: string, categoria: string) {
-  return recetas.filter((r) => r.publica && normalizar(r.titulo).includes(normalizar(nombre)) && (!categoria || r.categoria === categoria));
+  return recetas.filter((r) => !r.borrada && r.publica && normalizar(r.titulo).includes(normalizar(nombre)) && (!categoria || r.categoria === categoria));
 }
 export const contarLikes = (r: Receta, likes: string[]) => r.likesBase + (likes.includes(r.id) ? 1 : 0);
 export const esPropia = (r: Receta) => Boolean(estado.usuario && r.autor_id === estado.usuario.id);
 function requerirUsuario() {
   if (!estado.usuario) throw new Error("Iniciá sesión para continuar.");
+  if (estado.bloqueado) throw new Error("Tu cuenta está bloqueada.");
   return estado.usuario;
 }
 async function alternar(tabla: "me_gusta" | "guardadas", id: string) {
@@ -105,11 +131,24 @@ async function alternar(tabla: "me_gusta" | "guardadas", id: string) {
 }
 export const alternarLike = (id: string) => alternar("me_gusta", id);
 export const alternarGuardada = (id: string) => alternar("guardadas", id);
+
+export async function reportarReceta(id: string, motivo: string) {
+  const usuario = requerirUsuario();
+  const texto = motivo.trim();
+  if (!texto || texto.length > 2000) throw new Error("Escribí un motivo de entre 1 y 2000 caracteres.");
+  const { error } = await getSupabase().from("reportes").insert({
+    receta_id: id, usuario_id: usuario.id, motivo: texto,
+  });
+  // No se solicita SELECT: los reportes solo pueden ser leídos por administradores.
+  if (error?.code === "23505") throw new Error("Ya enviaste un reporte para esta receta.");
+  if (error) throw error;
+}
 type DatosReceta = Omit<Receta, "id" | "autor" | "autor_id" | "likesBase" | "imagen_path">;
 export async function guardarReceta(datos: DatosReceta, id?: string, foto?: File, quitarFoto = false) {
   const usuario = requerirUsuario();
   const anterior = id ? estado.recetas.find((r) => r.id === id) : undefined;
   if (id && (!anterior || !esPropia(anterior))) throw new Error("Solo podés editar tus recetas.");
+  if (anterior?.borrada) throw new Error("Esta receta fue borrada por un administrador.");
   if (!datos.titulo.trim() || !datos.ingredientes.length || !datos.pasos.length) throw new Error("Completá título, ingredientes y pasos.");
   const db = getSupabase();
   let imagen = quitarFoto ? null : anterior?.imagen_path ?? null;

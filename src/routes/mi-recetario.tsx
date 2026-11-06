@@ -44,7 +44,7 @@ function MiRecetario() {
       {pestana === "mias" ? (
         <Grilla recetas={recetas.filter(esPropia)} vacio="Todavía no creaste recetas." />
       ) : (
-        <Grilla recetas={recetas.filter((r) => guardadas.includes(r.id))} vacio="Todavía no guardaste recetas." />
+        <Grilla recetas={recetas.filter((r) => !r.borrada && guardadas.includes(r.id))} vacio="Todavía no guardaste recetas." />
       )}
     </section>
   );

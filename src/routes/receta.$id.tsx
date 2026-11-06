@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Controles, Meta, FotoReceta } from "@/components/recetas";
+import { BotonReportar, Controles, Meta, FotoReceta } from "@/components/recetas";
 import { eliminarReceta, esPropia, mensajeError, useEstado } from "@/lib/recetas";
 import { useState } from "react";
 
@@ -24,6 +24,15 @@ function Detalle() {
   if (!receta) return <p className="text-muted-foreground">Esta receta no existe. <Link to="/" className="text-primary underline">Volver a Explorar</Link></p>;
   const propia = esPropia(receta);
 
+  if (receta.borrada) return <article className="mx-auto max-w-2xl space-y-6 rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900">
+    <h1 className="font-display text-4xl">{receta.titulo}</h1>
+    <section role="alert" className="space-y-3">
+      <h2 className="font-display text-2xl">Receta borrada por un administrador</h2>
+      <p className="whitespace-pre-wrap break-words"><span className="font-semibold">Razón del borrado: </span>“{receta.motivo_borrado}”</p>
+    </section>
+    <Link to="/mi-recetario" className="inline-block rounded-full border border-red-300 px-4 py-2">Volver a mi recetario</Link>
+  </article>;
+
   return (
     <article className="mx-auto max-w-2xl space-y-6">
       <FotoReceta receta={receta} grande />
@@ -33,7 +42,7 @@ function Detalle() {
         {receta.descripcion && <p>{receta.descripcion}</p>}
         <Meta receta={receta} />
       </header>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Controles receta={receta} />
         {propia && (
           <>
@@ -57,6 +66,7 @@ function Detalle() {
             </button>
           </>
         )}
+        <BotonReportar receta={receta} />
       </div>
       {error && <p role="alert" className="text-destructive">{error}</p>}
       <section>

@@ -212,6 +212,8 @@
 .nav-link { padding: 0.55rem 1rem; border-radius: 999px; font-size: 0.9rem; color: var(--muted-foreground); white-space: nowrap; }
 .nav-link:hover { color: var(--primary); background: oklch(0.86 0.045 145); box-shadow: inset 0 0 0 1px oklch(0.65 0.055 145 / 35%); }
 .nav-link-active { background: var(--card); color: var(--primary); font-weight: 600; box-shadow: 0 2px 5px oklch(0.28 0.025 150 / 7%); }
+.nav-admin { padding-block: calc(0.55rem + 0.25rem); color: #991b1b; background: #fee2e2; font-weight: 600; box-shadow: inset 0 0 0 1px #fca5a5; }
+.nav-admin:hover { color: #7f1d1d; background: #fecaca; box-shadow: inset 0 0 0 1px #f87171; }
 .account-area { position: relative; margin-left: 0.5rem; }
 .account-button { border-radius: 999px; padding: 0.7rem 1.1rem; background: var(--card); color: var(--primary); font-size: 0.875rem; font-weight: 600; }
 .account-button:hover:not(:disabled) { background: var(--secondary); }
