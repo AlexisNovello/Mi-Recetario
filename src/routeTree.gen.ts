@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as MiRecetarioRouteImport } from './routes/mi-recetario'
 import { Route as NuevaRouteImport } from './routes/nueva'
 import { Route as EditarIdRouteImport } from './routes/editar.$id'
@@ -18,6 +19,11 @@ import { Route as RecetaIdRouteImport } from './routes/receta.$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MiRecetarioRoute = MiRecetarioRouteImport.update({
@@ -43,6 +49,7 @@ const RecetaIdRoute = RecetaIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/mi-recetario': typeof MiRecetarioRoute
   '/nueva': typeof NuevaRoute
   '/editar/$id': typeof EditarIdRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/mi-recetario': typeof MiRecetarioRoute
   '/nueva': typeof NuevaRoute
   '/editar/$id': typeof EditarIdRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/mi-recetario': typeof MiRecetarioRoute
   '/nueva': typeof NuevaRoute
   '/editar/$id': typeof EditarIdRoute
@@ -65,12 +74,15 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/mi-recetario' | '/nueva' | '/editar/$id' | '/receta/$id'
+  fullPaths:
+    '/' | '/admin' | '/mi-recetario' | '/nueva' | '/editar/$id' | '/receta/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/mi-recetario' | '/nueva' | '/editar/$id' | '/receta/$id'
+  to:
+    '/' | '/admin' | '/mi-recetario' | '/nueva' | '/editar/$id' | '/receta/$id'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/mi-recetario'
     | '/nueva'
     | '/editar/$id'
@@ -79,6 +91,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   MiRecetarioRoute: typeof MiRecetarioRoute
   NuevaRoute: typeof NuevaRoute
   EditarIdRoute: typeof EditarIdRoute
@@ -92,6 +105,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mi-recetario': {
@@ -127,6 +147,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   MiRecetarioRoute: MiRecetarioRoute,
   NuevaRoute: NuevaRoute,
   EditarIdRoute: EditarIdRoute,

@@ -23,6 +23,7 @@ export function fotoCacheada(path: string, usuario: string): Foto | undefined {
   }
   memoria.delete(key);
   try { sessionStorage.removeItem(key); } catch { /* Caché opcional. */ }
+  return undefined;
 }
 
 export function cargarFoto(path: string, usuario: string): Promise<Foto> {

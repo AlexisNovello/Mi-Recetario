@@ -17,6 +17,7 @@ export const Route = createFileRoute("/editar/$id")({
 function Editar() {
   const { id } = Route.useParams();
   const receta = useEstado().recetas.find((r) => r.id === id);
+  if (receta?.borrada) return <p role="alert">Esta receta fue borrada por un administrador y no se puede editar.</p>;
   if (!receta || !esPropia(receta))
     return <p className="text-muted-foreground">Solo podés editar tus propias recetas. <Link to="/" className="text-primary underline">Volver</Link></p>;
   return (

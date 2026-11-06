@@ -121,8 +121,24 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const { cargando, error } = useEstado();
+  const { cargando, error, esAdmin, bloqueado, motivoBloqueo, accesoVerificado } = useEstado();
   useEffect(() => iniciarConexion(), []);
+
+  if (bloqueado) return <>
+    <header className="site-header border-b bg-card">
+      <div className="site-nav mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-4">
+        <span className="site-brand mr-auto inline-flex items-center gap-3 font-display text-2xl"><span className="flex size-11 items-center justify-center rounded-2xl bg-secondary"><LogoRecetario /></span>Mi Recetario</span>
+        <Cuenta />
+      </div>
+    </header>
+    <main className="mx-auto max-w-2xl space-y-5 px-4 pb-8 pt-16 sm:pt-20">
+      <section role="alert" className="space-y-4 rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900">
+        <h1 className="font-display text-3xl">Tu cuenta está bloqueada</h1>
+        <p className="whitespace-pre-wrap break-words"><span className="font-semibold">Razón del bloqueo: </span>“{motivoBloqueo}”</p>
+      </section>
+      <p className="text-sm leading-relaxed text-muted-foreground">Si considerás que el bloqueo se aplicó por error, podés solicitar una revisión escribiendo un correo electrónico al administrador: <span className="break-words font-semibold">alexis_novello99@hotmail.com</span>.</p>
+    </main>
+  </>;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -130,6 +146,7 @@ function RootComponent() {
       <header className="site-header border-b bg-card">
         <nav aria-label="Navegación principal" className="site-nav mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-4">
           <Link to="/" className="site-brand mr-auto inline-flex items-center gap-3 font-display text-2xl text-primary"><span className="flex size-11 items-center justify-center rounded-2xl bg-secondary"><LogoRecetario /></span>Mi Recetario</Link>
+          {esAdmin && <Link to="/admin" className="nav-link nav-admin mr-2">Admin</Link>}
           <div className="site-links flex items-center gap-1 rounded-full bg-muted p-1">
           <Link to="/" className="nav-link" activeProps={{ className: "nav-link-active" }} activeOptions={{ exact: true }}>Explorar</Link>
           <Link to="/mi-recetario" className="nav-link" activeProps={{ className: "nav-link-active" }}>Mi recetario</Link>
@@ -138,10 +155,13 @@ function RootComponent() {
         </nav>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">
-        {cargando ? <p role="status">Cargando recetario…</p> : error ? <div role="alert" className="space-y-3">
+        {cargando ? <p role="status">Cargando recetario…</p> : <>
+        {error && <div role="alert" className="space-y-3">
           <p>{mensajeError({ message: error })}</p>
           <button type="button" onClick={() => void recargar()} className="text-primary underline">Reintentar</button>
-        </div> : <Outlet />}
+        </div>}
+        {accesoVerificado && <Outlet />}
+        </>}
       </main>
     </QueryClientProvider>
   );

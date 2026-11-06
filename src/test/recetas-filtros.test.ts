@@ -22,4 +22,7 @@ describe("Búsqueda en Explorar", () => {
   it("muestra todas las públicas al limpiar filtros y excluye siempre las privadas", () => {
     expect(filtrarRecetas(recetas, "", "").map((r) => r.id)).toEqual(["1", "2"]);
   });
+  it("no muestra posteos borrados aunque sean propios y públicos", () => {
+    expect(filtrarRecetas([{ ...base, borrada: true }], "", "")).toEqual([]);
+  });
 });

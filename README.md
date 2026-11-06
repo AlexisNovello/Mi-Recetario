@@ -53,6 +53,41 @@ En la configuración de autenticación de Supabase, habilitá el acceso por corr
 
 Las fotos se obtienen desde Supabase mediante enlaces temporales. La app reutiliza los enlaces válidos en la pestaña para reducir solicitudes al filtrar o recargar. Los cambios de imagen generan una ruta nueva.
 
+### Roles de usuario
+
+Después de la migración inicial, ejecutá una sola vez [`supabase/migrations/202611050001_roles.sql`](supabase/migrations/202611050001_roles.sql) en el SQL Editor de Supabase, tanto en bases existentes como en proyectos nuevos. Agrega `perfiles.rol`, con los valores `usuario` (predeterminado) y `admin`, y la función `public.es_admin()` para consultar si la sesión actual es administradora. Esta migración prepara el rol; los permisos de moderación se incorporarán junto con el panel.
+
+Para asignar el rol a una cuenta ya registrada, ejecutá esta consulta desde el SQL Editor, reemplazando el correo:
+
+```sql
+update public.perfiles as p
+set rol = 'admin'
+from auth.users as u
+where p.id = u.id
+  and lower(u.email) = lower('correo@ejemplo.com')
+returning p.id, p.nombre, p.rol;
+```
+
+La consulta debe devolver el perfil actualizado. Si no devuelve filas, comprobá que el correo corresponda a una cuenta registrada. Para quitar el rol, ejecutá la misma consulta con `set rol = 'usuario'`. Las cuentas de la app no tienen permiso para modificar esta columna; la asignación se realiza desde el SQL Editor. El rol es propio de la aplicación y no modifica los roles de conexión de PostgreSQL.
+
+Para habilitar el listado de cuentas del panel Admin, ejecutá después [`supabase/migrations/202611050002_admin_usuarios.sql`](supabase/migrations/202611050002_admin_usuarios.sql). Agrega una consulta paginada que verifica `public.es_admin()` antes de leer los datos de Auth. No expone contraseñas ni tokens y no habilita todavía acciones de moderación. La pestaña Usuarios muestra los datos de cuenta almacenados; no calcula estadísticas de posteos.
+
+Luego ejecutá [`supabase/migrations/202611050003_admin_usuarios_campos.sql`](supabase/migrations/202611050003_admin_usuarios_campos.sql) para limitar la consulta a los campos utilizados: ID, nombre, rol, correo, registro, confirmación del correo y último acceso.
+
+Para habilitar el bloqueo, ejecutá [`supabase/migrations/202611050004_bloqueo_usuarios.sql`](supabase/migrations/202611050004_bloqueo_usuarios.sql) después de las anteriores. Agrega `perfiles.bloqueado` y `motivo_bloqueo`, protege el motivo de la lectura pública y restringe las tablas del recetario y su almacenamiento para sesiones bloqueadas. El administrador confirma el bloqueo con un motivo obligatorio (hasta 2000 caracteres); no puede bloquearse a sí mismo. La cuenta afectada puede autenticarse para consultar su motivo y cerrar sesión, pero la app no muestra contenido ni navegación. Se comprueba al ingresar y al actualizar la sesión o recuperar el foco. El bloqueo conserva el rol de la cuenta. La autenticación se mantiene habilitada a propósito para poder mostrar el motivo. Los visitantes sin sesión conservan el acceso público habitual.
+
+Para habilitar el desbloqueo con confirmación desde el panel, ejecutá [`supabase/migrations/202611050005_desbloqueo_usuarios.sql`](supabase/migrations/202611050005_desbloqueo_usuarios.sql) después de la migración de bloqueo. La función verifica el rol de administrador, quita el bloqueo y limpia el motivo sin modificar el rol del usuario.
+
+Para impedir que un administrador bloquee a otro administrador, ejecutá [`supabase/migrations/202611050006_proteger_admins.sql`](supabase/migrations/202611050006_proteger_admins.sql). La función comprueba el rol de destino en la base antes de aplicar el bloqueo.
+
+Para crear la tabla de reportes, ejecutá [`supabase/migrations/202611050007_reportes.sql`](supabase/migrations/202611050007_reportes.sql) después de las anteriores. Cada reporte referencia una receta y al usuario que reporta, con motivo, fecha y estado. Se admite un reporte por usuario y receta. Solo las cuentas autenticadas sin bloqueo pueden reportar recetas accesibles; solo administradores pueden leer los reportes y marcar su estado como revisado. El autor se obtiene de la receta relacionada. Al eliminar físicamente la receta o la cuenta que reportó, sus reportes se eliminan en cascada. El formulario guarda el reporte al confirmar y conserva el motivo si falla el envío; la fecha y el estado pendiente los asigna la base.
+
+Para habilitar Admin > Posteos, ejecutá [`supabase/migrations/202611050008_admin_reportes.sql`](supabase/migrations/202611050008_admin_reportes.sql). La consulta agrupa por receta y ordena por cantidad de reportes del estado seleccionado y fecha del más reciente. Las filas se despliegan para mostrar motivos, remitentes y fechas; «Ver receta» abre el original en otra pestaña. «Marcar como revisado» actualiza el estado y vuelve a consultar el orden. Solo administradores sin bloqueo pueden consultar estos datos y acceder al original de una receta reportada que se haya vuelto privada.
+
+Para habilitar «Borrar posteo», ejecutá [`supabase/migrations/202611050009_borrar_posteos.sql`](supabase/migrations/202611050009_borrar_posteos.sql). La acción requiere confirmar y escribir un motivo, marca la receta como borrada y pasa sus reportes a revisados en la misma transacción. No elimina la fila ni los reportes: su autor conserva la tarjeta roja en Mis recetas y ve el motivo al abrirla. Las recetas borradas no aparecen en Explorar ni Guardadas, no pueden editarse, volver a publicarse o recibir nuevas interacciones. Las políticas restringen su lectura al autor y administradores; el contenido queda conservado en la base para moderación.
+
+Para conservar los reportes revisados en la lista, ejecutá [`supabase/migrations/202611050010_reportes_revisados_visibles.sql`](supabase/migrations/202611050010_reportes_revisados_visibles.sql). El filtro predeterminado es Todos: los pendientes mantienen la prioridad y los revisados aparecen en verde al final, tanto dentro del posteo como entre posteos completamente revisados. Los filtros específicos siguen disponibles.
+
 ## Comandos
 
 | Comando | Acción |
