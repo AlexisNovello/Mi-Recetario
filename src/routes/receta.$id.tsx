@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { BotonReportar, Controles, Meta, FotoReceta } from "@/components/recetas";
 import { eliminarReceta, esPropia, mensajeError, useEstado } from "@/lib/recetas";
 import { useState } from "react";
+import { ModoCocina } from "@/components/modo-cocina";
 
 export const Route = createFileRoute("/receta/$id")({
   head: () => ({
@@ -70,7 +71,10 @@ function Detalle() {
       </div>
       {error && <p role="alert" className="text-destructive">{error}</p>}
       <section>
-        <h2 className="mb-2 font-display text-2xl">Ingredientes</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-2xl">Ingredientes</h2>
+          <ModoCocina key={receta.id} receta={receta} />
+        </div>
         <ul className="list-disc space-y-1 pl-6">{receta.ingredientes.map((i, n) => <li key={n}>{i}</li>)}</ul>
       </section>
       <section>

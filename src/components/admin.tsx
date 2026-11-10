@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { getSupabase } from "@/lib/supabase";
 import { mensajeError, useEstado } from "@/lib/recetas";
 import { AdminReportes } from "@/components/admin-reportes";
+import { AdminEstadisticas } from "@/components/admin-estadisticas";
 
 type CuentaAdmin = {
   id: string; nombre: string | null; rol: string | null; correo: string | null;
@@ -22,7 +23,7 @@ export function PanelAdmin() {
 
 function ContenidoAdmin() {
   const { usuario } = useEstado();
-  const [pestana, setPestana] = useState<"usuarios" | "posteos">("usuarios");
+  const [pestana, setPestana] = useState<"estadisticas" | "usuarios" | "reportes">("usuarios");
   const [usuarios, setUsuarios] = useState<CuentaAdmin[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -79,10 +80,10 @@ function ContenidoAdmin() {
   return <section className="space-y-6">
     <div>
       <h1 className="font-display text-4xl">Administración</h1>
-      <p className="text-muted-foreground">Usuarios y posteos del recetario.</p>
+      <p className="text-muted-foreground">Estadísticas, usuarios y reportes del recetario.</p>
     </div>
     <div role="tablist" aria-label="Administración" className="flex w-fit max-w-full flex-wrap gap-1 rounded-full border border-primary/30 bg-card p-1 shadow-sm">
-      {tab("usuarios", "Usuarios")}{tab("posteos", "Posteos")}
+      {tab("estadisticas", "Estadísticas")}{tab("usuarios", "Usuarios")}{tab("reportes", "Reportes")}
     </div>
     {pestana === "usuarios" ? <div role="tabpanel" id="admin-panel-usuarios" aria-labelledby="admin-tab-usuarios" className="space-y-4">
       {error && <div role="alert" className="space-y-2 text-destructive">
@@ -115,7 +116,9 @@ function ContenidoAdmin() {
       </div>
       {cargando && <p role="status">Cargando usuarios…</p>}
       {!cargando && !error && hayMas && <button type="button" onClick={() => setPagina((n) => n + 1)} className="rounded-full border px-5 py-2 text-primary">Cargar más usuarios</button>}
-    </div> : <div role="tabpanel" id="admin-panel-posteos" aria-labelledby="admin-tab-posteos">
+    </div> : pestana === "estadisticas" ? <div role="tabpanel" id="admin-panel-estadisticas" aria-labelledby="admin-tab-estadisticas">
+      <AdminEstadisticas verReportes={() => setPestana("reportes")} />
+    </div> : <div role="tabpanel" id="admin-panel-reportes" aria-labelledby="admin-tab-reportes">
       <AdminReportes />
     </div>}
     <Dialog.Root open={cuentaBloqueo !== null} onOpenChange={(abierto) => { if (!abierto && !bloqueando) setCuentaBloqueo(null); }}>

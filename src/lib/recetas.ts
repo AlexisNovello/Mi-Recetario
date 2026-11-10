@@ -108,6 +108,9 @@ export function filtrarRecetas(recetas: Receta[], nombre: string, categoria: str
   return recetas.filter((r) => !r.borrada && r.publica && normalizar(r.titulo).includes(normalizar(nombre)) && (!categoria || r.categoria === categoria));
 }
 export const contarLikes = (r: Receta, likes: string[]) => r.likesBase + (likes.includes(r.id) ? 1 : 0);
+export function seleccionarDestacadas(recetas: Receta[], likes: string[]) {
+  return [...recetas].sort((a, b) => contarLikes(b, likes) - contarLikes(a, likes)).slice(0, 3);
+}
 export const esPropia = (r: Receta) => Boolean(estado.usuario && r.autor_id === estado.usuario.id);
 function requerirUsuario() {
   if (!estado.usuario) throw new Error("Iniciá sesión para continuar.");
