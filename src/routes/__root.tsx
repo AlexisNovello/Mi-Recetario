@@ -15,6 +15,7 @@ import { LogoRecetario } from "@/components/logo-recetario";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { iniciarConexion, mensajeError, recargar, useEstado } from "@/lib/recetas";
 import { Cuenta } from "@/components/cuenta";
+import { iniciarVisitas } from "@/lib/visitas";
 
 function NotFoundComponent() {
   return (
@@ -123,6 +124,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { cargando, error, esAdmin, bloqueado, motivoBloqueo, accesoVerificado } = useEstado();
   useEffect(() => iniciarConexion(), []);
+  useEffect(() => iniciarVisitas(), []);
 
   if (bloqueado) return <>
     <header className="site-header border-b bg-card">

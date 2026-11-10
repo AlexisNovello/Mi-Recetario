@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bookmark, BookmarkCheck, Clock, Heart, Users } from "lucide-react";
+import { Bookmark, BookmarkCheck, Clock, Heart, Star, Users } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { getSupabase } from "@/lib/supabase";
@@ -36,7 +36,7 @@ export function Controles({ receta }: { receta: Receta }) {
         onClick={() => void actuar(() => alternarLike(receta.id))}
         aria-pressed={gusta}
         aria-label={gusta ? `Quitar me gusta de ${receta.titulo}` : `Me gusta ${receta.titulo}`}
-        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm ${gusta ? "remove-action" : "hover:enabled:bg-secondary"}`}
+        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm text-primary shadow-sm ${gusta ? "remove-action border-primary bg-secondary" : "border-primary/60 bg-white hover:enabled:bg-secondary"}`}
       >
         <Heart className={`size-4 text-primary ${gusta ? "fill-current" : ""}`} />
         {contarLikes(receta, likes)}
@@ -51,7 +51,7 @@ export function Controles({ receta }: { receta: Receta }) {
         }}
         aria-pressed={guardada}
         aria-label={guardada ? `Quitar ${receta.titulo} de guardadas` : `Guardar ${receta.titulo}`}
-        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm ${guardada ? "remove-action" : "hover:enabled:bg-secondary"}`}
+        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm text-primary shadow-sm ${guardada ? "remove-action border-primary bg-secondary" : "border-primary/60 bg-white hover:enabled:bg-secondary"}`}
       >
         <Marcador className="size-4" />
         {guardada ? "Guardada" : "Guardar"}
@@ -156,11 +156,17 @@ export function Meta({ receta }: { receta: Receta }) {
   );
 }
 
-export function TarjetaReceta({ receta }: { receta: Receta }) {
+export function TarjetaReceta({ receta, destacada = false }: { receta: Receta; destacada?: boolean }) {
   return (
-    <article className={`recipe-card overflow-hidden rounded-2xl border shadow-sm ${receta.borrada ? "border-red-300 bg-red-50 text-red-900" : "bg-card"}`}>
+    <article className={`recipe-card overflow-hidden rounded-2xl border shadow-sm ${destacada ? "recipe-card-featured" : ""} ${receta.borrada ? "border-red-300 bg-red-50 text-red-900" : "bg-card"}`}>
       <Link to="/receta/$id" params={{ id: receta.id }} className="block hover:opacity-90">
-        <FotoReceta receta={receta} />
+        <div className="relative">
+          <FotoReceta receta={receta} />
+          {destacada && <span title="Receta destacada" className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full border border-amber-300 bg-amber-50 text-amber-600 shadow-sm">
+            <Star aria-hidden="true" className="size-5 -rotate-15 fill-current" />
+            <span className="sr-only">Receta destacada</span>
+          </span>}
+        </div>
         <div className="space-y-1 p-4 pb-2">
           <h3 className="font-display text-xl">{receta.titulo}</h3>
           <p className="text-sm text-muted-foreground">por {receta.autor}</p>

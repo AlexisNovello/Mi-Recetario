@@ -46,7 +46,7 @@ describe("Panel de administración", () => {
     const vista = render(<PanelAdmin />);
     expect(await screen.findByText("ana@example.com")).toBeInTheDocument();
     expect(mock.rpc).toHaveBeenCalledWith("admin_listar_usuarios", { limite: 100, desde: 0 });
-    fireEvent.click(screen.getByRole("tab", { name: "Posteos" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Reportes" }));
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Mostrar");
     fireEvent.click(screen.getByRole("tab", { name: "Usuarios" }));
     expect(screen.getByText("ana@example.com")).toBeInTheDocument();
