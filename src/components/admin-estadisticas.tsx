@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Users, BookOpen, Eye, Flag, Heart, RefreshCw } from "lucide-react";
+import { Users, BookOpen, Eye, Flag, Heart, RefreshCw, ChefHat } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { getSupabase } from "@/lib/supabase";
 import { mensajeError } from "@/lib/recetas";
@@ -12,6 +12,7 @@ type Estadisticas = {
   categorias: { nombre: string; cantidad: number }[];
   populares: { id: string; titulo: string; likes: number }[];
   visitas_desde: string | null;
+  chef_ia?: { total: number; periodo: number; usuarios: number; serie: { fecha: string; consultas: number }[] };
 };
 const numero = (n: number) => n.toLocaleString("es-AR");
 const fecha = (valor: string) => new Date(`${valor}T12:00:00`).toLocaleDateString("es-AR", { day: "numeric", month: "short" });
@@ -71,6 +72,28 @@ export function AdminEstadisticas({ verReportes }: { verReportes: () => void }) 
           {nombre === "Reportes pendientes" && <button type="button" onClick={verReportes} className="mt-2 text-sm text-primary underline">Ver reportes</button>}
         </article>)}
       </div>
+      <section aria-labelledby="estadisticas-chef" className="space-y-4">
+        <div><h3 id="estadisticas-chef" className="flex items-center gap-2 font-display text-2xl"><ChefHat aria-hidden="true" className="size-6 text-primary" />Uso del chef IA</h3><p className="mt-1 text-sm text-muted-foreground">Consultas que consumieron cuota, incluidos los intentos con error o tiempo de espera agotado.</p></div>
+        {!datos.chef_ia ? <p role="status" className="rounded-xl border bg-card p-4 text-sm">Para habilitar esta estadística, ejecutá la migración 202611110002_admin_estadisticas_ia.sql en Supabase.</p> : <>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { nombre: "Consultas acumuladas", valor: datos.chef_ia.total, detalle: "Total conservado en el registro de cuota" },
+              { nombre: "Consultas del período", valor: datos.chef_ia.periodo, detalle: `En los últimos ${dias} días` },
+              { nombre: "Usuarios que consultaron", valor: datos.chef_ia.usuarios, detalle: `Usuarios distintos en los últimos ${dias} días` },
+            ].map((item) => <article key={item.nombre} className={tarjeta}><h4 className="text-sm font-semibold text-muted-foreground">{item.nombre}</h4><p className="mt-3 font-display text-4xl text-primary">{numero(item.valor)}</p><p className="mt-2 text-xs text-muted-foreground">{item.detalle}</p></article>)}
+          </div>
+          <article className={tarjeta}>
+            <h4 className="font-display text-xl">Consultas al chef por día</h4>
+            {datos.chef_ia.periodo === 0 ? <p className="py-8 text-center text-muted-foreground">No se registraron consultas al chef en este período.</p> : <div role="img" aria-label={`${datos.chef_ia.periodo} consultas al chef IA de ${datos.chef_ia.usuarios} usuarios en los últimos ${dias} días.`} className="mt-4 h-64 min-w-0">
+              <ResponsiveContainer width="100%" height="100%"><BarChart data={datos.chef_ia.serie} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e1e8de" /><XAxis dataKey="fecha" tickFormatter={fecha} minTickGap={35} tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip labelFormatter={(v) => fecha(String(v))} contentStyle={tooltip} cursor={{ fill: "#edf3e9" }} /><Bar dataKey="consultas" name="Consultas" fill="#315c40" radius={[4, 4, 0, 0]} maxBarSize={28} />
+              </BarChart></ResponsiveContainer>
+            </div>}
+            <p className="mt-3 text-xs text-muted-foreground">Fechas según el día del contador de cuota en la base de datos. Incluye hoy. Borrar una conversación no elimina su consumo; eliminar una cuenta sí elimina sus registros de cuota. No mide respuestas exitosas ni costos.</p>
+          </article>
+        </>}
+      </section>
       <div className="grid gap-5 lg:grid-cols-2">
         <article className={tarjeta}>
           <h3 className="font-display text-xl">Crecimiento de la comunidad</h3><p className="mb-4 text-sm text-muted-foreground">Nuevos usuarios y recetas públicas por día.</p>

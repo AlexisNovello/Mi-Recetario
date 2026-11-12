@@ -6,6 +6,7 @@ const mock = vi.hoisted(() => ({
   estado: { usuario: { id: "a1" } as { id: string } | null, esAdmin: true, cargando: false },
   rpc: vi.fn(),
 }));
+vi.mock("@/components/admin-estadisticas", () => ({ AdminEstadisticas: () => <p>Estadísticas del recetario</p> }));
 vi.mock("@/lib/supabase", () => ({ getSupabase: () => ({ rpc: mock.rpc }) }));
 vi.mock("@/lib/recetas", () => ({ useEstado: () => mock.estado, mensajeError: (e: { message: string }) => e.message }));
 
@@ -15,10 +16,22 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+function renderUsuarios() {
+  const vista = render(<PanelAdmin />);
+  const tab = screen.queryByRole("tab", { name: "Usuarios" });
+  if (tab) fireEvent.click(tab);
+  return vista;
+}
 describe("Panel de administración", () => {
+  it("abre las estadísticas de manera predeterminada", () => {
+    mock.rpc.mockResolvedValue({ data: [], error: null });
+    render(<PanelAdmin />);
+    expect(screen.getByRole("tab", { name: "Estadísticas" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Estadísticas del recetario");
+  });
   it("deshabilita el bloqueo de otra cuenta administradora", async () => {
     mock.rpc.mockResolvedValue({ data: [{ id: "a2", nombre: "Otro admin", rol: "admin", bloqueado: false }], error: null });
-    render(<PanelAdmin />);
+    renderUsuarios();
     const boton = await screen.findByRole("button", { name: "Bloquear a Otro admin" });
     expect(boton).toBeDisabled();
     fireEvent.click(boton);
@@ -28,7 +41,7 @@ describe("Panel de administración", () => {
 
   it("no consulta ni muestra las cuentas sin una sesión administradora", () => {
     mock.estado.esAdmin = false;
-    const vista = render(<PanelAdmin />);
+    const vista = renderUsuarios();
     expect(screen.getByRole("alert")).toHaveTextContent("Solo los administradores");
     expect(mock.rpc).not.toHaveBeenCalled();
     mock.estado.usuario = null;
@@ -43,7 +56,7 @@ describe("Panel de administración", () => {
       correo_confirmado_en: null, ultimo_acceso: null,
     }];
     mock.rpc.mockImplementation((nombre: string) => Promise.resolve({ data: nombre === "admin_listar_usuarios" ? cuentas : [], error: null }));
-    const vista = render(<PanelAdmin />);
+    const vista = renderUsuarios();
     expect(await screen.findByText("ana@example.com")).toBeInTheDocument();
     expect(mock.rpc).toHaveBeenCalledWith("admin_listar_usuarios", { limite: 100, desde: 0 });
     fireEvent.click(screen.getByRole("tab", { name: "Reportes" }));
@@ -59,7 +72,7 @@ describe("Panel de administración", () => {
   it("permite reintentar una consulta fallida", async () => {
     mock.rpc.mockResolvedValueOnce({ data: null, error: { message: "Sin conexión" } })
       .mockResolvedValueOnce({ data: [], error: null });
-    render(<PanelAdmin />);
+    renderUsuarios();
     expect(await screen.findByRole("alert")).toHaveTextContent("Sin conexión");
     fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     expect(await screen.findByText("No hay usuarios registrados.")).toBeInTheDocument();
@@ -68,7 +81,7 @@ describe("Panel de administración", () => {
   it("exige un motivo y confirma el bloqueo en la base antes de marcarlo", async () => {
     mock.rpc.mockResolvedValueOnce({ data: [{ id: "u1", nombre: "Ana", rol: "usuario", correo: "ana@example.com", bloqueado: false }], error: null })
       .mockResolvedValueOnce({ data: null, error: null });
-    render(<PanelAdmin />);
+    renderUsuarios();
     fireEvent.click(await screen.findByRole("button", { name: "Bloquear a Ana" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     const confirmar = screen.getByRole("button", { name: "Bloquear" });
@@ -86,7 +99,7 @@ describe("Panel de administración", () => {
   it("conserva el motivo y muestra el error cuando la base rechaza el bloqueo", async () => {
     mock.rpc.mockResolvedValueOnce({ data: [{ id: "u1", nombre: "Ana", rol: "usuario", bloqueado: false }], error: null })
       .mockResolvedValueOnce({ data: null, error: { message: "Permiso denegado" } });
-    render(<PanelAdmin />);
+    renderUsuarios();
     fireEvent.click(await screen.findByRole("button", { name: "Bloquear a Ana" }));
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "Motivo de prueba" } });
     fireEvent.click(screen.getByRole("button", { name: "Bloquear" }));
@@ -98,7 +111,7 @@ describe("Panel de administración", () => {
   it("pide confirmación y solo desbloquea después de aceptar", async () => {
     mock.rpc.mockResolvedValueOnce({ data: [{ id: "u1", nombre: "Ana", rol: "usuario", bloqueado: true, motivo_bloqueo: "Motivo anterior" }], error: null })
       .mockResolvedValueOnce({ data: null, error: null });
-    render(<PanelAdmin />);
+    renderUsuarios();
     fireEvent.click(await screen.findByRole("button", { name: "Desbloquear a Ana" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("¿Confirmás");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
