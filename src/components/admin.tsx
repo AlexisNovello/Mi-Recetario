@@ -23,7 +23,7 @@ export function PanelAdmin() {
 
 function ContenidoAdmin() {
   const { usuario } = useEstado();
-  const [pestana, setPestana] = useState<"estadisticas" | "usuarios" | "reportes">("usuarios");
+  const [pestana, setPestana] = useState<"estadisticas" | "usuarios" | "reportes">("estadisticas");
   const [usuarios, setUsuarios] = useState<CuentaAdmin[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");

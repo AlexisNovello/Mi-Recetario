@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Shuffle, X } from "lucide-react";
 import { Grilla, TarjetaReceta } from "@/components/recetas";
-import { CATEGORIAS, filtrarRecetas, seleccionarDestacadas, useEstado } from "@/lib/recetas";
+import { CATEGORIAS, filtrarRecetas, seleccionarDestacadas, useEstado, type PeriodoDestacados } from "@/lib/recetas";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,7 +18,8 @@ export const Route = createFileRoute("/")({
 
 function Explorar() {
   const navigate = useNavigate();
-  const { recetas, likes } = useEstado();
+  const { recetas, likes, votos } = useEstado();
+  const [periodo, setPeriodo] = useState<PeriodoDestacados>(7);
   const [nombre, setNombre] = useState("");
   const [categoria, setCategoria] = useState("");
   const resultados = filtrarRecetas(recetas, nombre, categoria);
@@ -27,7 +28,7 @@ function Explorar() {
     const receta = candidatas[Math.floor(Math.random() * candidatas.length)];
     if (receta) void navigate({ to: "/receta/$id", params: { id: receta.id } });
   }
-  const destacadas = seleccionarDestacadas(resultados, likes);
+  const destacadas = seleccionarDestacadas(resultados, likes, periodo, votos);
   const destacadasIds = new Set(destacadas.map((r) => r.id));
   const restantes = resultados.filter((r) => !destacadasIds.has(r.id));
   const hayFiltros = nombre.length > 0 || categoria !== "";
@@ -70,17 +71,25 @@ function Explorar() {
         <button type="button" disabled={!hayFiltros} onClick={() => { setNombre(""); setCategoria(""); }}
           className="remove-action h-10 rounded-md border border-primary/60 bg-white px-4 py-2 font-semibold text-primary shadow-sm disabled:cursor-not-allowed disabled:text-muted-foreground">Limpiar filtros</button>
       </div>
-      {destacadas.length > 0 && <section aria-labelledby="destacados" className="space-y-4">
-        <div>
-          <h2 id="destacados" className="font-display text-2xl">Destacados</h2>
-          <p className="text-sm font-medium text-primary">Las recetas con más me gusta de la comunidad{hayFiltros ? " que coinciden con tu búsqueda" : ""}.</p>
+      <section aria-labelledby="destacados" className="space-y-4">
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+          <div className="min-w-0 space-y-1">
+          <h2 id="destacados" className="font-display text-2xl leading-8">Recetas destacadas</h2>
+          <p className="text-sm font-medium text-primary">Las recetas con más me gusta {periodo === 0 ? "acumulados" : `de los últimos ${periodo} días`}{hayFiltros ? " que coinciden con tu búsqueda" : ""}.</p>
+          </div>
+          <label className="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-auto">
+            <span className="font-semibold leading-8 text-primary">Período de destacadas</span>
+            <select value={periodo} onChange={(e) => setPeriodo(Number(e.target.value) as PeriodoDestacados)} className="min-w-0 max-w-full rounded-md border bg-card px-3 py-2">
+              <option value={7}>Últimos 7 días</option><option value={30}>Últimos 30 días</option><option value={0}>Históricos</option>
+            </select>
+          </label>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {destacadas.length > 0 ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {destacadas.map((receta) => <TarjetaReceta key={receta.id} receta={receta} destacada />)}
-        </div>
-      </section>}
+        </div> : <p role="status" className="rounded-xl border bg-card p-4 text-muted-foreground">{hayFiltros ? "No hay recetas destacadas que coincidan con los filtros en este período." : "Todavía no hay recetas destacadas en este período."}</p>}
+      </section>
       {restantes.length > 0 && <section aria-labelledby="mas-recetas" className="space-y-4">
-        <h2 id="mas-recetas" className="font-display text-2xl">Más recetas</h2>
+        <h2 id="mas-recetas" className="font-display text-2xl leading-8">Más recetas</h2>
         <Grilla recetas={restantes} vacio="" />
       </section>}
       {resultados.length === 0 && <Grilla recetas={resultados} vacio={hayFiltros ? "No hay recetas que coincidan con la búsqueda y la categoría." : "Todavía no hay recetas públicas."} />}

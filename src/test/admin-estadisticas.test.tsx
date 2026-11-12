@@ -18,6 +18,26 @@ beforeEach(() => { rpc.mockReset().mockResolvedValue({ data: datos, error: null 
 afterEach(cleanup);
 
 describe("Estadísticas administrativas", () => {
+  it("muestra el consumo agregado del chef y el período elegido", async () => {
+    rpc.mockResolvedValue({ data: { ...datos, chef_ia: { total: 120, periodo: 45, usuarios: 6, serie: [] } }, error: null });
+    render(<AdminEstadisticas verReportes={() => {}} />);
+    expect(await screen.findByText("120")).toBeInTheDocument();
+    expect(screen.getByText("45")).toBeInTheDocument();
+    expect(screen.getByText("6")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "45 consultas al chef IA de 6 usuarios en los últimos 30 días." })).toBeInTheDocument();
+    expect(screen.getByText(/incluidos los intentos con error/)).toBeInTheDocument();
+  });
+  it("distingue un período sin consultas de una migración pendiente", async () => {
+    rpc.mockResolvedValue({ data: { ...datos, chef_ia: { total: 0, periodo: 0, usuarios: 0, serie: [] } }, error: null });
+    render(<AdminEstadisticas verReportes={() => {}} />);
+    expect(await screen.findByText("No se registraron consultas al chef en este período.")).toBeInTheDocument();
+    expect(screen.queryByText(/Para habilitar esta estadística/)).not.toBeInTheDocument();
+  });
+  it("conserva las estadísticas existentes si falta habilitar las del chef", async () => {
+    render(<AdminEstadisticas verReportes={() => {}} />);
+    expect(await screen.findByText(/Para habilitar esta estadística/)).toHaveTextContent("202611110002_admin_estadisticas_ia.sql");
+    expect(screen.getByText("14")).toBeInTheDocument();
+  });
   it("muestra los datos reales, los estados vacíos y el acceso a reportes", async () => {
     const verReportes = vi.fn();
     render(<AdminEstadisticas verReportes={verReportes} />);

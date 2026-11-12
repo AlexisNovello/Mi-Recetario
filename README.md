@@ -11,7 +11,30 @@ Aplicación de recetas caseras para descubrir ideas, publicar recetas propias y 
 - Dar me gusta y organizar recetas guardadas en «Mi recetario».
 - Confirmar antes de quitar una receta de los guardados.
 
-## Tecnologías
+## Chef IA
+
+Para ver el uso del chef en Admin → Estadísticas, ejecutá después de la migración del chat `supabase/migrations/202611110002_admin_estadisticas_ia.sql`. Extiende la consulta administrativa sin dar acceso directo a `cuota_ia`: muestra consultas acumuladas, consumo y usuarios distintos del período, y una serie diaria. Cuenta intentos que consumieron cuota, no respuestas exitosas ni costos. Usa las fechas del contador de cuota en la base de datos. Eliminar una cuenta elimina también sus registros de cuota y reduce estos totales.
+
+El acceso «Preguntale al chef IA» abre `/chef-ia`, un chat separado del recetario. Requiere iniciar sesión y permite crear, retomar y eliminar conversaciones privadas, sincronizadas por cuenta. Los mensajes anteriores se envían a Gemini para mantener el contexto; las sugerencias no se publican como recetas. Cada conversación admite 20 intercambios y cada cuenta tiene 20 intentos diarios (incluidos intentos que fallen en el proveedor).
+
+Para habilitarlo:
+
+1. Ejecutá `supabase/migrations/202611110001_chat_ia.sql` después de las migraciones anteriores en el SQL Editor. Incluye el historial con RLS y un contador privado de consultas.
+2. Creá una clave de Gemini en Google AI Studio. Elegí un modelo de texto con nivel gratuito disponible en tu cuenta: https://ai.google.dev/gemini-api/docs/pricing. Los cupos del proveedor se comparten entre usuarios y pueden cambiar.
+3. Configurá los secretos de la Edge Function, usando tus valores reales:
+
+   ```sh
+   supabase secrets set GEMINI_API_KEY=tu-clave GEMINI_MODEL=id-del-modelo
+   supabase functions deploy chef-ia
+   ```
+
+   Vinculá antes la CLI al proyecto correcto con `supabase link --project-ref tu-proyecto`. La función valida la sesión mediante Supabase Auth; mantené la verificación JWT predeterminada. Las claves de Gemini se guardan como secretos de Supabase, nunca como variables `VITE_` ni en Git.
+
+4. Iniciá sesión, abrí el chat, preguntá por platos con ingredientes y hacé una consulta de seguimiento. Recargá para comprobar el historial y verificá con otra cuenta que no pueda ver tus conversaciones.
+
+Sin estos pasos, el chat muestra un error al cargar el historial o al consultar; no usa respuestas simuladas. El historial se guarda después de recibir una respuesta completa. Si falla el guardado se muestra un aviso y la respuesta permanece visible mientras no salgas de la página.
+
+## Tecnologías utilizadas
 
 React, TypeScript, TanStack Start y Router, Vite y Tailwind CSS. Supabase proporciona autenticación, base de datos y almacenamiento privado de fotos. Las pruebas utilizan Vitest y Testing Library.
 

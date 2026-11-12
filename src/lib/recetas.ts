@@ -12,13 +12,15 @@ export type Receta = {
   borrada?: boolean; motivo_borrado?: string | null;
 };
 type FilaReceta = Omit<Receta, "autor" | "likesBase"> & { autor_id: string };
+export type VotoReceta = { receta_id: string; creado_en: string };
+export type PeriodoDestacados = 0 | 7 | 30;
 type Estado = {
-  recetas: Receta[]; likes: string[]; guardadas: string[];
+  recetas: Receta[]; likes: string[]; guardadas: string[]; votos: VotoReceta[];
   usuario: User | null; esAdmin: boolean; cargando: boolean; error: string; pendientes: string[];
   bloqueado: boolean; motivoBloqueo: string;
   accesoVerificado: boolean;
 };
-const INICIAL: Estado = { recetas: [], likes: [], guardadas: [], usuario: null, esAdmin: false, cargando: true, error: "", pendientes: [], bloqueado: false, motivoBloqueo: "", accesoVerificado: false };
+const INICIAL: Estado = { recetas: [], likes: [], guardadas: [], votos: [], usuario: null, esAdmin: false, cargando: true, error: "", pendientes: [], bloqueado: false, motivoBloqueo: "", accesoVerificado: false };
 let estado = INICIAL;
 let version = 0;
 const oyentes = new Set<() => void>();
@@ -55,7 +57,7 @@ export async function recargar() {
     const [recetas, perfiles, likes, guardadas] = await Promise.all([
       db.from("recetas").select("*").order("creado_en", { ascending: false }),
       db.from("perfiles").select("id,nombre,rol"),
-      db.from("me_gusta").select("usuario_id,receta_id"),
+      db.from("me_gusta").select("usuario_id,receta_id,creado_en"),
       usuario ? db.from("guardadas").select("receta_id").eq("usuario_id", usuario.id) : Promise.resolve({ data: [], error: null }),
     ]);
     for (const respuesta of [recetas, perfiles, likes, guardadas]) if (respuesta.error) throw respuesta.error;
@@ -69,6 +71,7 @@ export async function recargar() {
         likesBase: (likes.data ?? []).filter((l) => l.receta_id === r.id && l.usuario_id !== usuario?.id).length,
       })),
       likes: (likes.data ?? []).filter((l) => l.usuario_id === usuario?.id).map((l) => l.receta_id),
+      votos: (likes.data ?? []).map((l) => ({ receta_id: l.receta_id, creado_en: l.creado_en })),
       guardadas: (guardadas.data ?? []).map((g) => g.receta_id), cargando: false, error: "",
     });
   } catch (error) {
@@ -108,8 +111,16 @@ export function filtrarRecetas(recetas: Receta[], nombre: string, categoria: str
   return recetas.filter((r) => !r.borrada && r.publica && normalizar(r.titulo).includes(normalizar(nombre)) && (!categoria || r.categoria === categoria));
 }
 export const contarLikes = (r: Receta, likes: string[]) => r.likesBase + (likes.includes(r.id) ? 1 : 0);
-export function seleccionarDestacadas(recetas: Receta[], likes: string[]) {
-  return [...recetas].sort((a, b) => contarLikes(b, likes) - contarLikes(a, likes)).slice(0, 3);
+export function seleccionarDestacadas(recetas: Receta[], likes: string[], periodo: PeriodoDestacados = 0, votos: VotoReceta[] = [], ahora = Date.now()) {
+  if (periodo === 0) return [...recetas].sort((a, b) => contarLikes(b, likes) - contarLikes(a, likes)).slice(0, 3);
+  const desde = ahora - periodo * 24 * 60 * 60 * 1000;
+  const conteos = new Map<string, number>();
+  for (const voto of votos) {
+    const fecha = Date.parse(voto.creado_en);
+    if (fecha >= desde && fecha <= ahora) conteos.set(voto.receta_id, (conteos.get(voto.receta_id) ?? 0) + 1);
+  }
+  return recetas.filter((r) => (conteos.get(r.id) ?? 0) > 0)
+    .sort((a, b) => (conteos.get(b.id) ?? 0) - (conteos.get(a.id) ?? 0)).slice(0, 3);
 }
 export const esPropia = (r: Receta) => Boolean(estado.usuario && r.autor_id === estado.usuario.id);
 function requerirUsuario() {
